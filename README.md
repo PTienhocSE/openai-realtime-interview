@@ -179,11 +179,13 @@ Evaluates candidates across:
 ### API Endpoints
 
 1. **`GET /api/session`** (`src/app/api/session/route.ts`)
+
    - Creates ephemeral realtime session
    - Model: `gpt-realtime-mini`
    - Returns session token for WebRTC connection
 
 2. **`POST /api/responses`** (`src/app/api/responses/route.ts`)
+
    - Proxy for OpenAI Responses API
    - Used by Supervisor and Guardrails
    - Supports both text and structured JSON responses
@@ -222,7 +224,7 @@ User speaks
 │  • Transcribes via gpt-4o-mini-         │  Frequency: Continuous
 │    transcribe (built-in, FREE)          │  File: useRealtimeSession.ts
 │  • Processes conversation                │
-│  • Maintains context                    │  
+│  • Maintains context                    │
 └───────────────┬─────────────────────────┘
                 │
                 │ Simple question? → Generate response immediately
@@ -321,21 +323,23 @@ Saved for recruiter review
 
 ### ⚡ Call Frequency Analysis
 
-| Phase | Model | API Endpoint | Calls/Interview | When Triggered |
-|-------|-------|--------------|-----------------|----------------|
-| Setup | `gpt-realtime-mini` | `/api/session` | 1 | Interview start |
-| Conversation | `gpt-realtime-mini` | WebRTC stream | Continuous | User speaks |
-| Transcription | `gpt-4o-mini-transcribe` | Built-in | Automatic | Every utterance |
-| Evaluation | `gpt-4o-mini` | `/api/responses` | ~15 | Complex questions |
-| Safety | `gpt-4o-mini` | `/api/responses` | ~25 (optional) | Before AI speaks |
+| Phase         | Model                    | API Endpoint     | Calls/Interview | When Triggered    |
+| ------------- | ------------------------ | ---------------- | --------------- | ----------------- |
+| Setup         | `gpt-realtime-mini`      | `/api/session`   | 1               | Interview start   |
+| Conversation  | `gpt-realtime-mini`      | WebRTC stream    | Continuous      | User speaks       |
+| Transcription | `gpt-4o-mini-transcribe` | Built-in         | Automatic       | Every utterance   |
+| Evaluation    | `gpt-4o-mini`            | `/api/responses` | ~15             | Complex questions |
+| Safety        | `gpt-4o-mini`            | `/api/responses` | ~25 (optional)  | Before AI speaks  |
 
 **Total API Calls per Interview:**
+
 - Session setup: **1 call**
 - Realtime connection: **1 continuous stream**
 - Supervisor: **~15 calls**
 - Guardrails: **~25 calls** (optional)
 
 **Total Distinct Models: 2**
+
 - `gpt-realtime-mini` (+ built-in transcription)
 - `gpt-4o-mini` (for supervisor + guardrails)
 
@@ -349,6 +353,7 @@ Saved for recruiter review
 ### Understanding Guardrails (Output Moderation)
 
 **What are Guardrails?**
+
 - Guardrails check the AI's **output BEFORE it speaks**
 - Think of it as a "safety filter" or "content review"
 - Runs on every agent response (20-30 times per interview)
@@ -358,7 +363,7 @@ Saved for recruiter review
 ```
 1. User: "What do you think about Java developers?"
                     ↓
-2. Realtime Agent generates: "Java developers are terrible, 
+2. Realtime Agent generates: "Java developers are terrible,
    they're slow and outdated compared to Node.js developers"
                     ↓
 3. 🛡️ GUARDRAIL CHECK (separate gpt-4o-mini call)
@@ -367,22 +372,25 @@ Saved for recruiter review
                     ↓
 4. ❌ BLOCKED! Guardrail triggers correction
                     ↓
-5. Agent says instead: "Both Java and Node.js have their strengths. 
+5. Agent says instead: "Both Java and Node.js have their strengths.
    Let's focus on your Node.js experience..."
 ```
 
 **Guardrail Categories:**
+
 - `OFFENSIVE`: Hate speech, discrimination, insults
 - `OFF_BRAND`: Disparaging competitors or other companies
 - `VIOLENCE`: Threats or violent content
 - `NONE`: Content is appropriate
 
 **Cost Impact:**
+
 - Each check: ~0.00004 USD
 - 25 checks per interview: ~0.001 USD
 - **Negligible cost but important for brand safety**
 
 **When to disable:**
+
 - ✅ During development/testing
 - ✅ When interviewing internally with trusted setup
 - ❌ Never disable in production facing real candidates
@@ -714,22 +722,22 @@ TOTAL: ~$1.50 per 30-minute interview
 
 ### Where Each Model is Used
 
-| Model | File Location | Line | Purpose |
-|-------|--------------|------|---------|
-| `gpt-realtime-mini` | `src/app/api/session/route.ts` | 14 | Session creation |
-| `gpt-realtime-mini` | `src/app/hooks/useRealtimeSession.ts` | 150 | Voice conversation |
-| `gpt-4o-mini-transcribe` | `src/app/hooks/useRealtimeSession.ts` | 153 | Transcription config |
-| `gpt-4o-mini` | `src/app/agentConfigs/interview/supervisorAgent.ts` | 412 | Supervisor intelligence |
-| `gpt-4o-mini` | `src/app/agentConfigs/guardrails.ts` | 41 | Safety checks |
+| Model                    | File Location                                       | Line | Purpose                 |
+| ------------------------ | --------------------------------------------------- | ---- | ----------------------- |
+| `gpt-realtime-mini`      | `src/app/api/session/route.ts`                      | 14   | Session creation        |
+| `gpt-realtime-mini`      | `src/app/hooks/useRealtimeSession.ts`               | 150  | Voice conversation      |
+| `gpt-4o-mini-transcribe` | `src/app/hooks/useRealtimeSession.ts`               | 153  | Transcription config    |
+| `gpt-4o-mini`            | `src/app/agentConfigs/interview/supervisorAgent.ts` | 412  | Supervisor intelligence |
+| `gpt-4o-mini`            | `src/app/agentConfigs/guardrails.ts`                | 41   | Safety checks           |
 
 ## 📊 Complete Model Overview
 
-| Model | Role | Where Used | API Type | Frequency | Cost/Call | Total Cost | Required? |
-|-------|------|------------|----------|-----------|-----------|------------|-----------|
-| **`gpt-realtime-mini`** | 🎙️ Voice Conversation | Session + Hook | Realtime API (WebRTC) | Continuous (30min) | $0.05/min | **$1.50** | ✅ YES |
-| **`gpt-4o-mini-transcribe`** | 📝 Audio→Text | Built-in Realtime | Config only | Automatic | **FREE** | **$0** | ✅ AUTO |
-| **`gpt-4o-mini`** | 🧠 Supervisor | supervisorAgent.ts | POST /api/responses | ~15 calls | $0.0002 | **$0.003** | ⚠️ Recommended |
-| **`gpt-4o-mini`** | 🛡️ Guardrails | guardrails.ts | POST /api/responses | ~25 calls | $0.00004 | **$0.001** | ❌ Optional |
+| Model                        | Role                  | Where Used         | API Type              | Frequency          | Cost/Call | Total Cost | Required?      |
+| ---------------------------- | --------------------- | ------------------ | --------------------- | ------------------ | --------- | ---------- | -------------- |
+| **`gpt-realtime-mini`**      | 🎙️ Voice Conversation | Session + Hook     | Realtime API (WebRTC) | Continuous (30min) | $0.05/min | **$1.50**  | ✅ YES         |
+| **`gpt-4o-mini-transcribe`** | 📝 Audio→Text         | Built-in Realtime  | Config only           | Automatic          | **FREE**  | **$0**     | ✅ AUTO        |
+| **`gpt-4o-mini`**            | 🧠 Supervisor         | supervisorAgent.ts | POST /api/responses   | ~15 calls          | $0.0002   | **$0.003** | ⚠️ Recommended |
+| **`gpt-4o-mini`**            | 🛡️ Guardrails         | guardrails.ts      | POST /api/responses   | ~25 calls          | $0.00004  | **$0.001** | ❌ Optional    |
 
 ### 💰 Total Cost Breakdown (30-min interview)
 
@@ -754,23 +762,26 @@ TOTAL: ~$1.50 per interview
 #### 1️⃣ **`gpt-realtime-mini`** - The Conversation Engine
 
 **Why Essential:**
+
 - ✅ Only model capable of **real-time voice conversation** over WebRTC
 - ✅ Natural, human-like dialogue with low latency (<500ms)
 - ✅ Handles audio input/output streaming
 - ✅ Manages conversation context and turn-taking
 
 **Cannot be replaced by:**
+
 - ❌ Regular GPT-4o/GPT-4o-mini (no real-time audio capability)
 - ❌ Whisper API (only transcription, no conversation)
 - ❌ Text-based models (too slow for voice interaction)
 
 **Configuration:**
+
 ```typescript
 // src/app/api/session/route.ts
-model: "gpt-realtime-mini"  // ✅ Optimized choice
+model: "gpt-realtime-mini"; // ✅ Optimized choice
 
 // src/app/hooks/useRealtimeSession.ts
-model: "gpt-realtime-mini"  // ✅ Same model
+model: "gpt-realtime-mini"; // ✅ Same model
 ```
 
 ---
@@ -778,16 +789,19 @@ model: "gpt-realtime-mini"  // ✅ Same model
 #### 2️⃣ **`gpt-4o-mini-transcribe`** - Built-in Transcription
 
 **Why Essential:**
+
 - ✅ Converts voice to text for transcript display
 - ✅ Enables conversation history logging
 - ✅ Required for supervisor to analyze conversation
 
 **Why NOT a separate API:**
+
 - ✅ **Built into Realtime API** - just a config option
 - ✅ No additional API calls needed
 - ✅ Zero extra cost (included in realtime pricing)
 
 **Configuration:**
+
 ```typescript
 // src/app/hooks/useRealtimeSession.ts
 config: {
@@ -802,6 +816,7 @@ config: {
 #### 3️⃣ **`gpt-4o-mini`** (Supervisor) - The Expert Brain
 
 **Why Essential:**
+
 - ✅ **Much smarter** than realtime model for complex reasoning
 - ✅ Evaluates technical depth using 175+ criteria knowledge base
 - ✅ Provides structured, consistent scoring (1-5 rubric)
@@ -809,12 +824,14 @@ config: {
 - ✅ Ensures fair evaluation across all candidates
 
 **Why Realtime Model Can't Do This:**
+
 - ❌ Realtime model optimized for speed, not deep reasoning
 - ❌ No access to knowledge base during real-time conversation
 - ❌ Inconsistent evaluation without structured framework
 - ❌ Cannot perform multi-step analysis while talking
 
 **Cost Comparison:**
+
 ```
 Option 1: Only gpt-4o-realtime-preview (no supervisor)
   Cost: $4.32 per 6 minutes
@@ -823,14 +840,15 @@ Option 1: Only gpt-4o-realtime-preview (no supervisor)
 Option 2: gpt-realtime-mini + gpt-4o-mini supervisor ✅
   Cost: $1.50 per 30 minutes
   Quality: ⭐⭐⭐⭐⭐ (expert evaluation)
-  
+
 SAVINGS: 70% cheaper + BETTER quality!
 ```
 
 **Configuration:**
+
 ```typescript
 // src/app/agentConfigs/interview/supervisorAgent.ts
-model: "gpt-4o-mini"  // ✅ Optimal: smart & cheap
+model: "gpt-4o-mini"; // ✅ Optimal: smart & cheap
 ```
 
 ---
@@ -838,22 +856,26 @@ model: "gpt-4o-mini"  // ✅ Optimal: smart & cheap
 #### 4️⃣ **`gpt-4o-mini`** (Guardrails) - Safety Filter [OPTIONAL]
 
 **Why Important (but optional):**
+
 - ✅ Prevents AI from saying inappropriate things
 - ✅ Checks **before** agent speaks (proactive)
 - ✅ Maintains brand professionalism
 - ✅ Detects: offensive, off-brand, violent content
 
 **When to DISABLE:**
+
 - ✅ Local development/testing
 - ✅ Internal demo presentations
 - ✅ When iterating on prompts quickly
 
 **When to ENABLE:**
+
 - ✅ Production with real candidates
 - ✅ Public demos
 - ✅ Recorded interviews
 
 **Cost Impact:**
+
 ```
 With Guardrails:    $1.504 per interview
 Without Guardrails: $1.503 per interview
@@ -861,23 +883,24 @@ Difference:         $0.001 (negligible!)
 ```
 
 **Configuration:**
+
 ```typescript
 // src/app/agentConfigs/guardrails.ts
-model: "gpt-4o-mini"  // ✅ Same model as supervisor
+model: "gpt-4o-mini"; // ✅ Same model as supervisor
 
 // To disable in App.tsx:
-outputGuardrails: []  // ✅ Empty array = disabled
+outputGuardrails: []; // ✅ Empty array = disabled
 ```
 
 ## 💰 Cost Optimization Strategy
 
 ### Architecture Comparison: Why This Configuration?
 
-| Configuration | Models | 30-min Cost | Quality | Recommendation |
-|--------------|--------|-------------|---------|----------------|
-| **❌ Premium Only** | `gpt-4o-realtime-preview` | **$14.40** | ⭐⭐⭐⭐⭐ | Too expensive |
-| **❌ Cheap Only** | `gpt-realtime-mini` alone | **$1.50** | ⭐⭐⭐ | Poor evaluation |
-| **✅ Our Hybrid** | `gpt-realtime-mini` + `gpt-4o-mini` | **$1.50** | ⭐⭐⭐⭐⭐ | **Best balance!** |
+| Configuration       | Models                              | 30-min Cost | Quality    | Recommendation    |
+| ------------------- | ----------------------------------- | ----------- | ---------- | ----------------- |
+| **❌ Premium Only** | `gpt-4o-realtime-preview`           | **$14.40**  | ⭐⭐⭐⭐⭐ | Too expensive     |
+| **❌ Cheap Only**   | `gpt-realtime-mini` alone           | **$1.50**   | ⭐⭐⭐     | Poor evaluation   |
+| **✅ Our Hybrid**   | `gpt-realtime-mini` + `gpt-4o-mini` | **$1.50**   | ⭐⭐⭐⭐⭐ | **Best balance!** |
 
 ### Detailed Cost Comparison
 
@@ -926,16 +949,19 @@ QUALITY vs Cheap: 40% better evaluation accuracy
 The architecture uses a strategic approach:
 
 1. **Cheap for Speed** (`gpt-realtime-mini`)
+
    - Natural conversation requires low latency
    - Voice streaming benefits from lightweight model
    - Handles 90% of interview flow efficiently
 
 2. **Smart for Depth** (`gpt-4o-mini`)
+
    - Technical evaluation requires reasoning
    - Knowledge base queries need intelligence
    - Called only when needed (10% of time)
 
 3. **Built-in for Free** (`gpt-4o-mini-transcribe`)
+
    - Transcription included in realtime cost
    - No additional API calls
    - Essential for history tracking
@@ -965,24 +991,28 @@ SAVINGS: $248.50 - $498.50 per interview (99.4% reduction!)
 ### When to Adjust Configuration
 
 **Development/Testing:**
+
 ```typescript
 // Disable guardrails to save time
-outputGuardrails: []  // Saves $0.001 per test
+outputGuardrails: []; // Saves $0.001 per test
 ```
 
 **Low-Budget Scenario:**
+
 ```typescript
 // Remove supervisor (not recommended)
-tools: []  // Saves $0.003 but loses quality
+tools: []; // Saves $0.003 but loses quality
 ```
 
 **High-Quality Requirement:**
+
 ```typescript
 // Upgrade to premium realtime (very expensive)
-model: "gpt-4o-realtime-preview"  // Costs $21.60 per 30min
+model: "gpt-4o-realtime-preview"; // Costs $21.60 per 30min
 ```
 
 **Our Recommendation:** Stick with current hybrid configuration
+
 - ✅ Best cost/quality ratio
 - ✅ Proven in production
 - ✅ Scalable to 1000s of interviews
@@ -1035,6 +1065,7 @@ The app is a standard Next.js application and can be deployed to:
 ### Why use multiple models instead of one?
 
 **Cost & Quality Trade-off:**
+
 - Single `gpt-4o-realtime-preview`: Fast but expensive (~$4.32 for 6 minutes)
 - Our hybrid approach: Fast conversation + smart evaluation (~$1.50 for 30 minutes)
 - **70% cost savings** while maintaining high-quality technical assessment
@@ -1043,18 +1074,19 @@ The app is a standard Next.js application and can be deployed to:
 
 Yes, but with trade-offs:
 
-| Model | Cost | Quality | Use Case |
-|-------|------|---------|----------|
-| `gpt-realtime-mini` | $ | ⭐⭐⭐ | Voice conversation (current) |
-| `gpt-4o-mini` | $ | ⭐⭐⭐⭐ | Supervisor/Guardrails (current) |
-| `gpt-4o-realtime` | $$$ | ⭐⭐⭐⭐⭐ | Premium conversation |
-| `gpt-4.1` | $$$$ | ⭐⭐⭐⭐⭐ | Expert evaluation (expensive) |
+| Model               | Cost | Quality    | Use Case                        |
+| ------------------- | ---- | ---------- | ------------------------------- |
+| `gpt-realtime-mini` | $    | ⭐⭐⭐     | Voice conversation (current)    |
+| `gpt-4o-mini`       | $    | ⭐⭐⭐⭐   | Supervisor/Guardrails (current) |
+| `gpt-4o-realtime`   | $$$  | ⭐⭐⭐⭐⭐ | Premium conversation            |
+| `gpt-4.1`           | $$$$ | ⭐⭐⭐⭐⭐ | Expert evaluation (expensive)   |
 
 **Recommendation**: Keep current configuration for best cost/quality balance.
 
 ### How much does a typical interview cost?
 
 **30-minute interview breakdown:**
+
 - Realtime conversation (includes transcription): ~$1.50
 - Supervisor calls (15×): ~$0.003
 - Guardrails checks (30×): ~$0.001 (optional)
@@ -1063,6 +1095,7 @@ Yes, but with trade-offs:
 **Note**: Transcription via `gpt-4o-mini-transcribe` is **included** in the realtime API cost, not a separate charge.
 
 Compare to traditional recruiting:
+
 - Phone screen: $50-100 (recruiter time)
 - Technical interview: $150-300 (engineer time)
 - Our AI: **$1.50** ✨ (99% cost reduction!)
@@ -1083,6 +1116,7 @@ await connect({
 ```
 
 **Trade-offs:**
+
 - ✅ Save ~$0.001 per interview (negligible)
 - ✅ Faster responses (no moderation check)
 - ⚠️ AI might say inappropriate things
@@ -1103,6 +1137,7 @@ export const interviewAgent = new RealtimeAgent({
 ```
 
 **Trade-offs:**
+
 - ✅ Save ~$0.003 per interview (tiny savings)
 - ❌ 40-60% reduction in evaluation quality
 - ❌ No access to technical knowledge base (175+ criteria)
@@ -1111,15 +1146,16 @@ export const interviewAgent = new RealtimeAgent({
 
 ### Which models are being used where?
 
-| Component | Model | API | Separate Call? | Purpose |
-|-----------|-------|-----|----------------|---------|
-| Session creation | `gpt-realtime-mini` | `/api/session` | ❌ No | WebRTC setup |
-| Voice conversation | `gpt-realtime-mini` | Realtime API | ✅ Yes (continuous) | Natural dialogue |
-| Transcription | `gpt-4o-mini-transcribe` | Built-in config | ❌ No (included) | Audio → Text |
-| Supervisor | `gpt-4o-mini` | `/api/responses` | ✅ Yes (~15×) | Expert evaluation |
-| Guardrails | `gpt-4o-mini` | `/api/responses` | ✅ Yes (~25×) | Content moderation |
+| Component          | Model                    | API              | Separate Call?      | Purpose            |
+| ------------------ | ------------------------ | ---------------- | ------------------- | ------------------ |
+| Session creation   | `gpt-realtime-mini`      | `/api/session`   | ❌ No               | WebRTC setup       |
+| Voice conversation | `gpt-realtime-mini`      | Realtime API     | ✅ Yes (continuous) | Natural dialogue   |
+| Transcription      | `gpt-4o-mini-transcribe` | Built-in config  | ❌ No (included)    | Audio → Text       |
+| Supervisor         | `gpt-4o-mini`            | `/api/responses` | ✅ Yes (~15×)       | Expert evaluation  |
+| Guardrails         | `gpt-4o-mini`            | `/api/responses` | ✅ Yes (~25×)       | Content moderation |
 
 **Key Points:**
+
 - **Transcription is FREE** - it's just a config option in the realtime session
 - **Only 2 models** actually making API calls: `gpt-realtime-mini` (continuous) and `gpt-4o-mini` (on-demand)
 - **Guardrails are optional** - you can disable them without affecting core functionality
@@ -1133,6 +1169,7 @@ export const interviewAgent = new RealtimeAgent({
 **Cause**: OPENAI_API_KEY not configured or invalid
 
 **Solution**:
+
 ```bash
 # Check .env.local file
 OPENAI_API_KEY=sk-your-actual-key-here
@@ -1143,12 +1180,14 @@ OPENAI_API_KEY=sk-your-actual-key-here
 **Current configuration is optimized**, but you can:
 
 1. **Disable Guardrails during development**:
+
 ```typescript
 // src/app/App.tsx - around line 213
 outputGuardrails: [], // Save $0.001 per test
 ```
 
 2. **Limit Supervisor calls** (not recommended):
+
 ```typescript
 // src/app/agentConfigs/interview/index.ts
 tools: [], // Remove supervisor - loses quality
@@ -1181,6 +1220,7 @@ Should be: model: "gpt-4o-mini"
 ```
 
 **Verify with grep:**
+
 ```bash
 # Windows PowerShell
 Select-String -Path "src/**/*.ts" -Pattern "model:" | Select-Object -First 10
@@ -1197,11 +1237,13 @@ Select-String -Path "src/**/*.ts" -Pattern "model:" | Select-Object -First 10
 **Error**: `Model 'gpt-realtime-mini' not found`
 
 **Causes:**
+
 1. API key doesn't have access to Realtime API
 2. Typo in model name
 3. Using wrong OpenAI API version
 
 **Solution:**
+
 ```bash
 # 1. Check API key has Realtime access
 # Contact OpenAI to enable Realtime API for your account
@@ -1217,6 +1259,7 @@ Select-String -Path "src/**/*.ts" -Pattern "model:" | Select-Object -First 10
 **Issue**: No transcription appears in UI
 
 **Check:**
+
 ```typescript
 // src/app/hooks/useRealtimeSession.ts
 config: {
@@ -1231,12 +1274,14 @@ config: {
 ### Connection issues
 
 **Check browser compatibility**:
+
 - Chrome/Edge: ✅ Full support
 - Firefox: ✅ Full support
 - Safari: ⚠️ May have WebRTC issues
 - Mobile browsers: ⚠️ Limited support
 
 **Grant microphone permissions**:
+
 ```
 chrome://settings/content/microphone
 ```
@@ -1247,16 +1292,17 @@ chrome://settings/content/microphone
 
 ```typescript
 // Add logging in src/app/hooks/useRealtimeSession.ts
-console.log('🎙️ Realtime model:', sessionRef.current.model);
+console.log("🎙️ Realtime model:", sessionRef.current.model);
 
 // Add logging in src/app/agentConfigs/interview/supervisorAgent.ts
-console.log('🧠 Supervisor call with model:', body.model);
+console.log("🧠 Supervisor call with model:", body.model);
 
 // Add logging in src/app/agentConfigs/guardrails.ts
-console.log('🛡️ Guardrail check with model:', body.model);
+console.log("🛡️ Guardrail check with model:", body.model);
 ```
 
 **Expected console output:**
+
 ```
 🎙️ Realtime model: gpt-realtime-mini
 🧠 Supervisor call with model: gpt-4o-mini
@@ -1302,7 +1348,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 // 1. Session Creation (route.ts)
 model: "gpt-realtime-mini"               // ✅ Optimal
 
-// 2. Voice Conversation (useRealtimeSession.ts)  
+// 2. Voice Conversation (useRealtimeSession.ts)
 model: "gpt-realtime-mini"               // ✅ Optimal
 config.inputAudioTranscription.model: "gpt-4o-mini-transcribe"  // ✅ Free
 
@@ -1323,6 +1369,7 @@ RESULT:
 **When to use each model:**
 
 1. **`gpt-realtime-mini`** ✅ (Current choice for conversation)
+
    - ✅ Natural voice conversation
    - ✅ Fast response times (<500ms)
    - ✅ Cost-effective (~$0.05/minute)
@@ -1331,6 +1378,7 @@ RESULT:
    - **Use for**: All real-time voice interactions
 
 2. **`gpt-4o-mini`** ✅ (Current choice for evaluation)
+
    - ✅ Strong reasoning and analysis
    - ✅ Very cost-effective ($0.60/1M tokens)
    - ✅ Good for technical assessment
@@ -1339,6 +1387,7 @@ RESULT:
    - **Use for**: Supervisor, Guardrails, any text reasoning
 
 3. **`gpt-4o-realtime-preview`** 🔶 (Premium alternative)
+
    - ✅ Excellent conversation quality
    - ✅ Better at complex multi-turn dialogue
    - ✅ Stronger reasoning while talking
@@ -1389,22 +1438,26 @@ RESULT:
 
 Our **2-model hybrid architecture** provides:
 
-1. **💰 Cost Efficiency**: 
+1. **💰 Cost Efficiency**:
+
    - Cheap model for conversation (bulk of the time)
    - Smart model for evaluation (only when needed)
    - 93% cheaper than premium-only approach
 
 2. **🎯 Quality**:
+
    - Expert-level technical assessment
    - 175+ evaluation criteria via knowledge base
    - Structured scoring and reports
 
 3. **📊 Consistency**:
+
    - Same evaluation framework for all candidates
    - Fair, objective scoring
    - Repeatable results
 
 4. **🔧 Flexibility**:
+
    - Easy to swap models
    - Can adjust behavior via prompts
    - Optional components (guardrails)
@@ -1490,20 +1543,24 @@ TOTAL QUALITY: ⭐⭐⭐⭐⭐
 ### Key Takeaways
 
 1. **Only 2 Real Models**
+
    - `gpt-realtime-mini`: Voice conversation + built-in transcription
    - `gpt-4o-mini`: Supervisor intelligence + optional guardrails
 
 2. **Transcription is NOT a Separate Model**
+
    - It's a **config option** in realtime API
    - **Zero extra cost**
    - No additional API calls
 
 3. **Guardrails are Optional**
+
    - Can disable during development
    - Negligible cost ($0.001)
    - Important for production safety
 
 4. **Supervisor is the Secret Sauce**
+
    - Makes cheap realtime model smart
    - Provides expert-level evaluation
    - Only called when needed (~15 times)
@@ -1517,15 +1574,15 @@ TOTAL QUALITY: ⭐⭐⭐⭐⭐
 
 **Should I change anything?**
 
-| Scenario | Action | Reason |
-|----------|--------|--------|
-| Just testing locally | Disable guardrails | Save time |
-| Production deployment | Keep everything | Safety first |
-| Very tight budget | Keep current config | Already optimal |
-| Unlimited budget | Use gpt-4o-realtime-preview | Slight quality boost |
-| Need faster dev | Disable guardrails | Iterate quicker |
-| Poor evaluation quality | Keep supervisor | Critical for quality |
-| High API costs | **Current config is optimal** | Already 93% cheaper |
+| Scenario                | Action                        | Reason               |
+| ----------------------- | ----------------------------- | -------------------- |
+| Just testing locally    | Disable guardrails            | Save time            |
+| Production deployment   | Keep everything               | Safety first         |
+| Very tight budget       | Keep current config           | Already optimal      |
+| Unlimited budget        | Use gpt-4o-realtime-preview   | Slight quality boost |
+| Need faster dev         | Disable guardrails            | Iterate quicker      |
+| Poor evaluation quality | Keep supervisor               | Critical for quality |
+| High API costs          | **Current config is optimal** | Already 93% cheaper  |
 
 **Bottom line: Current configuration is production-ready. Don't change unless you have a specific reason.**
 
