@@ -409,7 +409,7 @@ export const getNextResponseFromSupervisor = tool({
     const filteredLogs = history.filter((log) => log.type === "message");
 
     const body: any = {
-      model: "gpt-4.1",
+      model: "gpt-4o-mini",
       input: [
         {
           type: "message",
