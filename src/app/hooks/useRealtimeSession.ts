@@ -87,7 +87,7 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
 
   // Note: Conversation history accumulates tokens over time
   // The Realtime API automatically includes all conversation items in context
-  // To reduce token usage: 
+  // To reduce token usage:
   // 1. Keep conversations short (disconnect after 5-10 minutes)
   // 2. Disable transcription (already disabled above)
   // 3. Use gpt-realtime-mini model (already configured)

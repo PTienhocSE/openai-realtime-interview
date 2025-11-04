@@ -408,7 +408,7 @@ export const getNextResponseFromSupervisor = tool({
       | undefined;
 
     const history: RealtimeItem[] = (details?.context as any)?.history ?? [];
-    
+
     // Limit context to last 2 messages per role (4 messages total)
     // Convert RealtimeItem to ConversationItem format
     const conversationItems = history.map((item: any) => ({

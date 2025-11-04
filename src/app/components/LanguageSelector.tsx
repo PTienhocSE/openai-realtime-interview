@@ -77,9 +77,9 @@ export default function LanguageSelector({
             interview. Technical terms will remain in English.
           </p>
           <p className="text-sm text-gray-700 mt-2">
-            <strong>Lưu ý:</strong> Bạn có thể sử dụng tiếng Anh hoặc tiếng
-            Việt trong buổi phỏng vấn. Các thuật ngữ kỹ thuật sẽ giữ nguyên
-            bằng tiếng Anh.
+            <strong>Lưu ý:</strong> Bạn có thể sử dụng tiếng Anh hoặc tiếng Việt
+            trong buổi phỏng vấn. Các thuật ngữ kỹ thuật sẽ giữ nguyên bằng
+            tiếng Anh.
           </p>
         </div>
       </div>

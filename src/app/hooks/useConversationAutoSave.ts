@@ -47,11 +47,8 @@ export function useConversationAutoSave(
 
     // Save to localStorage
     try {
-      localStorage.setItem(
-        "conversation_backup",
-        JSON.stringify(exportData)
-      );
-      
+      localStorage.setItem("conversation_backup", JSON.stringify(exportData));
+
       const saveTime = new Date().toLocaleTimeString();
       console.log(
         `%c🔄 [AutoSave #${currentSaveCount}] Conversation saved at ${saveTime}`,
@@ -106,7 +103,10 @@ export function useConversationAutoSave(
 
     // Start auto-save timer when connected
     timerRef.current = setInterval(() => {
-      console.log("%c⏰ [AutoSave] Timer triggered!", "color: blue; font-weight: bold");
+      console.log(
+        "%c⏰ [AutoSave] Timer triggered!",
+        "color: blue; font-weight: bold"
+      );
       exportConversationToJSON();
     }, AUTO_SAVE_INTERVAL_MS);
 

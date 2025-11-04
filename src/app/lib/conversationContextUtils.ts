@@ -42,10 +42,7 @@ export function limitConversationContext(
   const limitedAssistantMessages = assistantMessages.slice(-messagesPerRole);
 
   // Combine and sort by original order (if items have timestamps or indices)
-  const limitedMessages = [
-    ...limitedUserMessages,
-    ...limitedAssistantMessages,
-  ];
+  const limitedMessages = [...limitedUserMessages, ...limitedAssistantMessages];
 
   // Sort to maintain chronological order
   limitedMessages.sort((a, b) => {

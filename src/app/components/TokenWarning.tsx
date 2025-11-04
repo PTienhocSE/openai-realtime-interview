@@ -39,7 +39,10 @@ export default function TokenWarning({
   if (!showWarning || !isConnected) return null;
 
   const isDanger = connectionTime >= DANGER_TIME_MS;
-  const timeLeft = Math.max(0, Math.ceil((DANGER_TIME_MS + 60000 - connectionTime) / 1000));
+  const timeLeft = Math.max(
+    0,
+    Math.ceil((DANGER_TIME_MS + 60000 - connectionTime) / 1000)
+  );
 
   return (
     <div

@@ -337,7 +337,10 @@ Xin chào! Đây là buổi phỏng vấn kỹ thuật cho vị trí Full-stack 
 Now, **begin Phase 1** and proceed through all phases systematically.
 `,
   // Disable supervisor tool in development environment (only enable in production)
-  tools: process.env.NODE_ENV === 'production' ? [getNextResponseFromSupervisor] : [],
+  tools:
+    process.env.NODE_ENV === "production"
+      ? [getNextResponseFromSupervisor]
+      : [],
 });
 
 export const interviewScenario = [interviewAgent];

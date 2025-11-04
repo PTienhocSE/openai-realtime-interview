@@ -57,7 +57,8 @@ function App() {
   // Agents SDK doesn't currently support codec selection so it is now forced
   // via global codecPatch at module load
 
-  const { addTranscriptMessage, addTranscriptBreadcrumb, transcriptItems } = useTranscript();
+  const { addTranscriptMessage, addTranscriptBreadcrumb, transcriptItems } =
+    useTranscript();
   const { logClientEvent, logServerEvent } = useEvent();
 
   const [selectedAgentName, setSelectedAgentName] = useState<string>("");
@@ -66,8 +67,11 @@ function App() {
   >(null);
   const [sessionStatus, setSessionStatus] =
     useState<SessionStatus>("DISCONNECTED");
-  const [showLanguageSelector, setShowLanguageSelector] = useState<boolean>(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
+  const [showLanguageSelector, setShowLanguageSelector] =
+    useState<boolean>(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(
+    null
+  );
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   // Ref to identify whether the latest agent switch came from an automatic handoff
@@ -97,12 +101,10 @@ function App() {
         setSelectedAgentName(agentName);
       },
     });
-  
+
   // Auto-save conversation every 2 minutes
-  const { exportConversationToJSON, nextSaveIn, saveCount } = useConversationAutoSave(
-    transcriptItems,
-    sessionStatus === "CONNECTED"
-  );
+  const { exportConversationToJSON, nextSaveIn, saveCount } =
+    useConversationAutoSave(transcriptItems, sessionStatus === "CONNECTED");
 
   const [isEventsPaneExpanded, setIsEventsPaneExpanded] =
     useState<boolean>(true);
@@ -215,11 +217,16 @@ function App() {
 
         // Use interview agent company name for guardrails
         // Only enable guardrails in production environment (disabled in development)
-        const isProduction = process.env.NODE_ENV === 'production';
-        const outputGuardrails = isProduction ? [createModerationGuardrail(interviewCompanyName)] : [];
+        const isProduction = process.env.NODE_ENV === "production";
+        const outputGuardrails = isProduction
+          ? [createModerationGuardrail(interviewCompanyName)]
+          : [];
 
         // Get selected language
-        const language = selectedLanguage || (localStorage.getItem("preferredLanguage") as Language) || "both";
+        const language =
+          selectedLanguage ||
+          (localStorage.getItem("preferredLanguage") as Language) ||
+          "both";
 
         await connect({
           getEphemeralKey: async () => EPHEMERAL_KEY,
@@ -329,7 +336,9 @@ function App() {
       setSessionStatus("DISCONNECTED");
     } else {
       // Check if language is already selected
-      const storedLanguage = localStorage.getItem("preferredLanguage") as Language;
+      const storedLanguage = localStorage.getItem(
+        "preferredLanguage"
+      ) as Language;
       if (!storedLanguage && !selectedLanguage) {
         // Show language selector before connecting
         setShowLanguageSelector(true);

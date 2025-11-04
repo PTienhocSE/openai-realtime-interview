@@ -24,11 +24,13 @@ export default function AutoSaveIndicator({
           <span className="font-semibold text-gray-700">Auto-Save Active</span>
         </div>
       </div>
-      
+
       <div className="mt-2 space-y-1 text-gray-600">
         <div className="flex items-center justify-between gap-4">
           <span>Next save:</span>
-          <span className="font-mono font-bold text-blue-600">{nextSaveIn}</span>
+          <span className="font-mono font-bold text-blue-600">
+            {nextSaveIn}
+          </span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span>Saves:</span>
