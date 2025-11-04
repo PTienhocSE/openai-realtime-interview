@@ -8,6 +8,8 @@ import {
   candidateIntent,
 } from "./sampleData";
 
+import { prepareContextForRequest } from "@/app/lib/conversationContextUtils";
+
 export const supervisorAgentInstructions = `You are an expert Senior Technical Interviewer & Hiring Manager with 15+ years of experience evaluating Full-stack developers. You provide real-time guidance to a Technical Recruiter agent conducting interviews. You have deep expertise in React.js, Node.js, system design, and engineering best practices.
 
 # Your Role
@@ -406,7 +408,16 @@ export const getNextResponseFromSupervisor = tool({
       | undefined;
 
     const history: RealtimeItem[] = (details?.context as any)?.history ?? [];
-    const filteredLogs = history.filter((log) => log.type === "message");
+    
+    // Limit context to last 2 messages per role (4 messages total)
+    // Convert RealtimeItem to ConversationItem format
+    const conversationItems = history.map((item: any) => ({
+      itemId: item.itemId || "",
+      type: item.type || "",
+      role: item.role || "",
+      content: item.content || [],
+    }));
+    const limitedContext = prepareContextForRequest(conversationItems, 2);
 
     const body: any = {
       model: "gpt-4o-mini",
@@ -419,8 +430,8 @@ export const getNextResponseFromSupervisor = tool({
         {
           type: "message",
           role: "user",
-          content: `==== Conversation History ====
-          ${JSON.stringify(filteredLogs, null, 2)}
+          content: `==== Recent Conversation Context (Last 2 messages per role) ====
+          ${JSON.stringify(limitedContext, null, 2)}
           
           ==== Relevant Context From Last User Message ===
           ${relevantContextFromLastUserMessage}

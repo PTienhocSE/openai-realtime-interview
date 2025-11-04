@@ -9,6 +9,9 @@ import Image from "next/image";
 import Transcript from "./components/Transcript";
 import Events from "./components/Events";
 import BottomToolbar from "./components/BottomToolbar";
+import LanguageSelector, { Language } from "./components/LanguageSelector";
+import AutoSaveIndicator from "./components/AutoSaveIndicator";
+import TokenWarning from "./components/TokenWarning";
 
 // Types
 import { SessionStatus } from "@/app/types";
@@ -34,6 +37,7 @@ const sdkScenarioMap: Record<string, RealtimeAgent[]> = {
 
 import useAudioDownload from "./hooks/useAudioDownload";
 import { useHandleSessionHistory } from "./hooks/useHandleSessionHistory";
+import { useConversationAutoSave } from "./hooks/useConversationAutoSave";
 
 function App() {
   const searchParams = useSearchParams()!;
@@ -53,13 +57,17 @@ function App() {
   // Agents SDK doesn't currently support codec selection so it is now forced
   // via global codecPatch at module load
 
-  const { addTranscriptMessage, addTranscriptBreadcrumb } = useTranscript();
+  const { addTranscriptMessage, addTranscriptBreadcrumb, transcriptItems } = useTranscript();
   const { logClientEvent, logServerEvent } = useEvent();
 
   const [selectedAgentName, setSelectedAgentName] = useState<string>("");
   const [selectedAgentConfigSet, setSelectedAgentConfigSet] = useState<
     RealtimeAgent[] | null
   >(null);
+  const [sessionStatus, setSessionStatus] =
+    useState<SessionStatus>("DISCONNECTED");
+  const [showLanguageSelector, setShowLanguageSelector] = useState<boolean>(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   // Ref to identify whether the latest agent switch came from an automatic handoff
@@ -89,9 +97,12 @@ function App() {
         setSelectedAgentName(agentName);
       },
     });
-
-  const [sessionStatus, setSessionStatus] =
-    useState<SessionStatus>("DISCONNECTED");
+  
+  // Auto-save conversation every 2 minutes
+  const { exportConversationToJSON, nextSaveIn, saveCount } = useConversationAutoSave(
+    transcriptItems,
+    sessionStatus === "CONNECTED"
+  );
 
   const [isEventsPaneExpanded, setIsEventsPaneExpanded] =
     useState<boolean>(true);
@@ -203,16 +214,21 @@ function App() {
         }
 
         // Use interview agent company name for guardrails
-        const companyName = interviewCompanyName;
-        const guardrail = createModerationGuardrail(companyName);
+        // Only enable guardrails in production environment (disabled in development)
+        const isProduction = process.env.NODE_ENV === 'production';
+        const outputGuardrails = isProduction ? [createModerationGuardrail(interviewCompanyName)] : [];
+
+        // Get selected language
+        const language = selectedLanguage || (localStorage.getItem("preferredLanguage") as Language) || "both";
 
         await connect({
           getEphemeralKey: async () => EPHEMERAL_KEY,
           initialAgents: reorderedAgents,
           audioElement: sdkAudioElement,
-          outputGuardrails: [guardrail],
+          outputGuardrails,
           extraContext: {
             addTranscriptBreadcrumb,
+            preferredLanguage: language,
           },
         });
       } catch (err) {
@@ -312,8 +328,25 @@ function App() {
       disconnectFromRealtime();
       setSessionStatus("DISCONNECTED");
     } else {
-      connectToRealtime();
+      // Check if language is already selected
+      const storedLanguage = localStorage.getItem("preferredLanguage") as Language;
+      if (!storedLanguage && !selectedLanguage) {
+        // Show language selector before connecting
+        setShowLanguageSelector(true);
+      } else {
+        if (!selectedLanguage && storedLanguage) {
+          setSelectedLanguage(storedLanguage);
+        }
+        connectToRealtime();
+      }
     }
+  };
+
+  const handleLanguageSelect = (language: Language) => {
+    setSelectedLanguage(language);
+    setShowLanguageSelector(false);
+    // Connect after language selection
+    setTimeout(() => connectToRealtime(), 100);
   };
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -532,6 +565,31 @@ function App() {
         setIsAudioPlaybackEnabled={setIsAudioPlaybackEnabled}
         codec={urlCodec}
         onCodecChange={handleCodecChange}
+      />
+
+      {/* Language Selector Modal */}
+      {showLanguageSelector && (
+        <LanguageSelector
+          onLanguageSelect={handleLanguageSelect}
+          onClose={() => setShowLanguageSelector(false)}
+        />
+      )}
+
+      {/* Auto-Save Indicator */}
+      <AutoSaveIndicator
+        isConnected={sessionStatus === "CONNECTED"}
+        nextSaveIn={nextSaveIn}
+        saveCount={saveCount}
+        onManualSave={exportConversationToJSON}
+      />
+
+      {/* Token Warning */}
+      <TokenWarning
+        isConnected={sessionStatus === "CONNECTED"}
+        onReconnect={() => {
+          disconnectFromRealtime();
+          setTimeout(() => connectToRealtime(), 500);
+        }}
       />
     </div>
   );

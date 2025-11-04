@@ -85,6 +85,13 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
     callbacks.onAgentHandoff?.(agentName);
   };
 
+  // Note: Conversation history accumulates tokens over time
+  // The Realtime API automatically includes all conversation items in context
+  // To reduce token usage: 
+  // 1. Keep conversations short (disconnect after 5-10 minutes)
+  // 2. Disable transcription (already disabled above)
+  // 3. Use gpt-realtime-mini model (already configured)
+
   useEffect(() => {
     if (sessionRef.current) {
       // Log server errors
@@ -147,11 +154,13 @@ export function useRealtimeSession(callbacks: RealtimeSessionCallbacks = {}) {
             return pc;
           },
         }),
-        model: "gpt-realtime-mini", // ✅ CHANGED: Use cheaper realtime model (saves ~70% cost)
+        model: "gpt-realtime-mini", // ✅ Use cheaper realtime model (saves ~70% cost)
         config: {
-          inputAudioTranscription: {
-            model: "gpt-4o-mini-transcribe",
-          },
+          // ⚠️ DISABLED: Transcription uses many tokens
+          // Enable only if you need to see transcripts in UI
+          // inputAudioTranscription: {
+          //   model: "gpt-4o-mini-transcribe",
+          // },
         },
         outputGuardrails: outputGuardrails ?? [],
         context: extraContext ?? {},
